@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
 function RemoteViewingApp() {
   const [coordinates, setCoordinates] = useState(null);
@@ -6,7 +6,6 @@ function RemoteViewingApp() {
   const [history, setHistory] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
-  const [showGestalt, setShowGestalt] = useState(false);
   const [gestaltText, setGestaltText] = useState('');
   
   // RV Protocol states
@@ -19,7 +18,6 @@ function RemoteViewingApp() {
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   
   const canvasRef = useRef(null);
-  const timerRef = useRef(null);
 
   // RV Symbols from the manual
   const rvSymbols = [
@@ -77,7 +75,6 @@ function RemoteViewingApp() {
     setCode(newCode);
     setCoordinates(null);
     setHasDrawn(false);
-    setShowGestalt(false);
     setGestaltText('');
     setBits([]);
     setCurrentBit(1);
