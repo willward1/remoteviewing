@@ -6,6 +6,8 @@ function RandomLocationGenerator() {
   const [history, setHistory] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [showGestalt, setShowGestalt] = useState(false);
+  const [gestaltText, setGestaltText] = useState('');
   const canvasRef = useRef(null);
 
   // Generate a random code in format [XXXX-XXXX]
@@ -59,6 +61,8 @@ function RandomLocationGenerator() {
     setCode(newCode);
     setCoordinates(null);
     setHasDrawn(false);
+    setShowGestalt(false);
+    setGestaltText('');
     // Clear the canvas
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -153,6 +157,10 @@ function RandomLocationGenerator() {
     setHasDrawn(false);
   };
 
+  const handleNext = () => {
+    setShowGestalt(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
@@ -182,12 +190,13 @@ function RandomLocationGenerator() {
           {code && !coordinates && (
             <div className="w-full mb-4">
               <h3 className="text-lg font-semibold text-center mb-3 text-gray-800">Draw your ideogram</h3>
-              <div className="border-2 border-gray-300 rounded-lg p-2 bg-white">
+              <div className="w-full">
                 <canvas
                   ref={canvasRef}
                   width={280}
                   height={200}
-                  className="border border-gray-200 rounded cursor-crosshair bg-white"
+                  className="border-2 border-gray-300 rounded-lg cursor-crosshair bg-white w-full"
+                  style={{ width: '100%', height: '200px' }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
@@ -196,30 +205,58 @@ function RandomLocationGenerator() {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 />
-                <div className="flex justify-between mt-2">
+                <div className="flex justify-center mt-2">
                   <button
                     onClick={clearCanvas}
                     className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
                   >
                     Clear
                   </button>
-                  <div className="text-xs text-gray-500 flex items-center">
-                    🖌️ Draw your impressions
-                  </div>
                 </div>
               </div>
+              
+              {/* Next button - show when drawing is done */}
+              {hasDrawn && (
+                <div className="flex justify-center mt-4">
+                  <button 
+                    onClick={handleNext}
+                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 font-medium"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
-          {/* Take Me There button - only show when drawing is done */}
-          {code && hasDrawn && !coordinates && (
-            <button 
-              onClick={takeMeThere}
-              className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
-            >
-              <span className="mr-2">📍</span>
-              Take Me There
-            </button>
+          {/* Gestalt text box */}
+          {showGestalt && !coordinates && (
+            <div className="w-full mb-4">
+              <label htmlFor="gestalt" className="block text-lg font-semibold text-gray-800 mb-2">
+                Gestalt:
+              </label>
+              <textarea
+                id="gestalt"
+                value={gestaltText}
+                onChange={(e) => setGestaltText(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                rows="4"
+                placeholder="Enter your gestalt..."
+              />
+              
+              {/* Take Me There button - only show when gestalt text exists */}
+              {gestaltText.trim() && (
+                <div className="flex justify-center mt-4">
+                  <button 
+                    onClick={takeMeThere}
+                    className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
+                  >
+                    <span className="mr-2">📍</span>
+                    Take Me There
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
         
