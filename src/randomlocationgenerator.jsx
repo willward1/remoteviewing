@@ -155,6 +155,14 @@ function RemoteViewingApp() {
         ctx.stroke();
         break;
         
+      default:
+        // Default: draw a simple line
+        ctx.beginPath();
+        ctx.moveTo(centerX - 20, centerY);
+        ctx.lineTo(centerX + 20, centerY);
+        ctx.stroke();
+        break;
+        
       case 'Curved Lines':
         // Draw curved water-like lines
         ctx.beginPath();
