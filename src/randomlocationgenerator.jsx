@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react'; // Remove useEffect
 
 function RandomLocationGenerator() {
   const [coordinates, setCoordinates] = useState(null);
