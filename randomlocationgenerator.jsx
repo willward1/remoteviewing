@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 function RandomLocationGenerator() {
   const [coordinates, setCoordinates] = useState(null);
   const [code, setCode] = useState(null);
   const [history, setHistory] = useState([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
+  const canvasRef = useRef(null);
 
   // Generate a random code in format [XXXX-XXXX]
   const generateRandomCode = () => {
@@ -54,7 +57,14 @@ function RandomLocationGenerator() {
   const generateNewCode = () => {
     const newCode = generateRandomCode();
     setCode(newCode);
-    setCoordinates(null); // Clear coordinates until "Take Me There" is clicked
+    setCoordinates(null);
+    setHasDrawn(false);
+    // Clear the canvas
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   };
 
   const takeMeThere = () => {
@@ -76,6 +86,71 @@ function RandomLocationGenerator() {
 
   const getGoogleMapsUrl = (lat, lon) => {
     return `https://www.google.com/maps?q=${lat},${lon}&t=k`;
+  };
+
+  // Drawing functions
+  const startDrawing = (e) => {
+    setIsDrawing(true);
+    setHasDrawn(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#374151';
+    
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  // Touch events for mobile
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousedown', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvasRef.current.dispatchEvent(mouseEvent);
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousemove', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvasRef.current.dispatchEvent(mouseEvent);
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    const mouseEvent = new MouseEvent('mouseup', {});
+    canvasRef.current.dispatchEvent(mouseEvent);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasDrawn(false);
   };
 
   return (
@@ -103,7 +178,41 @@ function RandomLocationGenerator() {
             </div>
           )}
           
-          {code && (
+          {/* Drawing Canvas - only show when code exists but coordinates don't */}
+          {code && !coordinates && (
+            <div className="w-full mb-4">
+              <h3 className="text-lg font-semibold text-center mb-3 text-gray-800">Draw your ideogram</h3>
+              <div className="border-2 border-gray-300 rounded-lg p-2 bg-white">
+                <canvas
+                  ref={canvasRef}
+                  width={280}
+                  height={200}
+                  className="border border-gray-200 rounded cursor-crosshair bg-white"
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                />
+                <div className="flex justify-between mt-2">
+                  <button
+                    onClick={clearCanvas}
+                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                  >
+                    Clear
+                  </button>
+                  <div className="text-xs text-gray-500 flex items-center">
+                    🖌️ Draw your impressions
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Take Me There button - only show when drawing is done */}
+          {code && hasDrawn && !coordinates && (
             <button 
               onClick={takeMeThere}
               className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
