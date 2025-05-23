@@ -100,8 +100,12 @@ function RandomLocationGenerator() {
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     
+    // Account for canvas scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
   };
 
   const draw = (e) => {
@@ -111,11 +115,15 @@ function RandomLocationGenerator() {
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     
+    // Account for canvas scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#374151';
     
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
     ctx.stroke();
   };
 
@@ -252,7 +260,7 @@ function RandomLocationGenerator() {
                     className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
                   >
                     <span className="mr-2">📍</span>
-                    Take Me There
+                    Reveal Location & Take Me There
                   </button>
                 </div>
               )}
