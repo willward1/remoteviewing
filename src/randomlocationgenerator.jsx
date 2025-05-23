@@ -121,7 +121,7 @@ function RandomLocationGenerator() {
     
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#374151';
+    ctx.strokeStyle = '#9CA3AF'; // Light gray for dark mode
     
     ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
     ctx.stroke();
@@ -169,41 +169,39 @@ function RandomLocationGenerator() {
     setShowGestalt(true);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
+      return (
+    <div className="min-h-screen bg-gray-900 py-8">
+      <div className="max-w-md mx-auto bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
         <div className="flex items-center justify-center mb-6">
-          <div className="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-            <span className="text-white text-xl">🌍</span>
-          </div>
-          <h1 className="text-xl font-bold text-gray-800">Random Location Generator</h1>
+          <span className="text-3xl mr-3">🌍</span>
+          <h1 className="text-xl font-bold text-white">Random Location Generator</h1>
         </div>
         
         <div className="flex flex-col items-center mb-6">
           <button 
             onClick={generateNewCode}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 mb-4 font-medium"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 font-medium transition-colors"
           >
             Generate Random Code
           </button>
           
           {code && (
             <div className="text-center mb-4">
-              <div className="text-2xl font-bold tracking-wider text-gray-800">[{code}]</div>
-              <div className="text-sm text-gray-500 mt-1">Your destination code</div>
+              <div className="text-2xl font-bold tracking-wider text-white">[{code}]</div>
+              <div className="text-sm text-gray-400 mt-1">Your destination code</div>
             </div>
           )}
           
           {/* Drawing Canvas - only show when code exists but coordinates don't */}
           {code && !coordinates && (
             <div className="w-full mb-4">
-              <h3 className="text-lg font-semibold text-center mb-3 text-gray-800">Draw your ideogram</h3>
+              <h3 className="text-lg font-semibold text-center mb-3 text-white">Draw your ideogram</h3>
               <div className="w-full">
                 <canvas
                   ref={canvasRef}
                   width={280}
                   height={200}
-                  className="border-2 border-gray-300 rounded-lg cursor-crosshair bg-white w-full"
+                  className="border-2 border-gray-600 rounded-lg cursor-crosshair bg-gray-900 w-full"
                   style={{ width: '100%', height: '200px' }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
@@ -216,7 +214,7 @@ function RandomLocationGenerator() {
                 <div className="flex justify-center mt-2">
                   <button
                     onClick={clearCanvas}
-                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-500 transition-colors"
                   >
                     Clear
                   </button>
@@ -228,7 +226,7 @@ function RandomLocationGenerator() {
                 <div className="flex justify-center mt-4">
                   <button 
                     onClick={handleNext}
-                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 font-medium"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
                   >
                     Next
                   </button>
@@ -240,14 +238,14 @@ function RandomLocationGenerator() {
           {/* Gestalt text box */}
           {showGestalt && !coordinates && (
             <div className="w-full mb-4">
-              <label htmlFor="gestalt" className="block text-lg font-semibold text-gray-800 mb-2">
+              <label htmlFor="gestalt" className="block text-lg font-semibold text-white mb-2">
                 Gestalt:
               </label>
               <textarea
                 id="gestalt"
                 value={gestaltText}
                 onChange={(e) => setGestaltText(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-400"
                 rows="4"
                 placeholder="Enter your gestalt..."
               />
@@ -257,7 +255,7 @@ function RandomLocationGenerator() {
                 <div className="flex justify-center mt-4">
                   <button 
                     onClick={takeMeThere}
-                    className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium flex items-center transition-colors"
                   >
                     <span className="mr-2">📍</span>
                     Reveal Location & Take Me There
@@ -269,20 +267,20 @@ function RandomLocationGenerator() {
         </div>
         
         {coordinates && (
-          <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <h2 className="text-lg font-semibold mb-3 text-gray-800">Current Location</h2>
+          <div className="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-750">
+            <h2 className="text-lg font-semibold mb-3 text-white">Current Location</h2>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Code:</span>
-                <span className="text-gray-800">[{code}]</span>
+                <span className="font-medium text-gray-300">Code:</span>
+                <span className="text-white">[{code}]</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Latitude:</span>
-                <span className="text-gray-800">{coordinates.lat}°</span>
+                <span className="font-medium text-gray-300">Latitude:</span>
+                <span className="text-white">{coordinates.lat}°</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Longitude:</span>
-                <span className="text-gray-800">{coordinates.lon}°</span>
+                <span className="font-medium text-gray-300">Longitude:</span>
+                <span className="text-white">{coordinates.lon}°</span>
               </div>
             </div>
             <div className="mt-4">
@@ -290,7 +288,7 @@ function RandomLocationGenerator() {
                 href={getGoogleMapsUrl(coordinates.lat, coordinates.lon)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-medium"
+                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
               >
                 View on Google Maps (Satellite)
               </a>
@@ -300,17 +298,17 @@ function RandomLocationGenerator() {
         
         {history.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold mb-3 text-gray-800">History (Last 10)</h2>
+            <h2 className="text-lg font-semibold mb-3 text-white">History (Last 10)</h2>
             <div className="max-h-64 overflow-y-auto">
               <div className="space-y-2">
                 {history.map((item, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                  <div key={index} className="p-3 bg-gray-700 rounded-lg border border-gray-600">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-medium text-gray-800">[{item.code}]</div>
-                        <div className="text-sm text-gray-600">{item.lat}°, {item.lon}°</div>
+                        <div className="font-medium text-white">[{item.code}]</div>
+                        <div className="text-sm text-gray-300">{item.lat}°, {item.lon}°</div>
                       </div>
-                      <div className="text-xs text-gray-500">{item.timestamp}</div>
+                      <div className="text-xs text-gray-400">{item.timestamp}</div>
                     </div>
                   </div>
                 ))}
