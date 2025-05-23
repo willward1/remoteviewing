@@ -129,12 +129,93 @@ function RemoteViewingApp() {
 
   const addSymbol = (symbol) => {
     setSelectedSymbol(symbol);
+    setHasDrawn(true);
+    
+    // Draw the symbol on the canvas
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#9CA3AF';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    
+    // Draw different symbols based on type
+    switch (symbol.name) {
+      case 'Angular Lines':
+        // Draw angular/cliff-like lines
+        ctx.beginPath();
+        ctx.moveTo(centerX - 40, centerY + 20);
+        ctx.lineTo(centerX - 10, centerY - 30);
+        ctx.lineTo(centerX + 20, centerY - 25);
+        ctx.lineTo(centerX + 40, centerY + 15);
+        ctx.stroke();
+        break;
+        
+      case 'Curved Lines':
+        // Draw curved water-like lines
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 30, 0, Math.PI, false);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY + 15, 25, 0, Math.PI, false);
+        ctx.stroke();
+        break;
+        
+      case 'Straight Lines':
+        // Draw boundary/interface lines
+        ctx.beginPath();
+        ctx.moveTo(centerX - 40, centerY);
+        ctx.lineTo(centerX + 40, centerY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(centerX - 30, centerY + 15);
+        ctx.lineTo(centerX + 30, centerY + 15);
+        ctx.stroke();
+        break;
+        
+      case 'Wavy Lines':
+        // Draw rolling terrain
+        ctx.beginPath();
+        ctx.moveTo(centerX - 40, centerY);
+        ctx.quadraticCurveTo(centerX - 20, centerY - 15, centerX, centerY);
+        ctx.quadraticCurveTo(centerX + 20, centerY + 15, centerX + 40, centerY);
+        ctx.stroke();
+        break;
+        
+      case 'Dots':
+        // Draw populated area dots
+        for (let i = 0; i < 8; i++) {
+          const x = centerX - 30 + (i % 4) * 20;
+          const y = centerY - 10 + Math.floor(i / 4) * 20;
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        break;
+        
+      case 'Irregular':
+        // Draw mountains/rough terrain
+        ctx.beginPath();
+        ctx.moveTo(centerX - 40, centerY + 20);
+        ctx.lineTo(centerX - 25, centerY - 25);
+        ctx.lineTo(centerX - 10, centerY - 5);
+        ctx.lineTo(centerX + 5, centerY - 30);
+        ctx.lineTo(centerX + 20, centerY - 10);
+        ctx.lineTo(centerX + 40, centerY + 20);
+        ctx.stroke();
+        break;
+    }
+    
     // Add symbol to current bit
     const newBit = {
       id: currentBit,
       phase: 'access',
       symbol: symbol,
-      drawing: null,
+      drawing: symbol.name,
       timestamp: new Date().toLocaleTimeString()
     };
     setBits(prev => [...prev, newBit]);
