@@ -135,27 +135,45 @@ function RandomLocationGenerator() {
   const handleTouchStart = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    const mouseEvent = new MouseEvent('mousedown', {
-      clientX: touch.clientX,
-      clientY: touch.clientY
-    });
-    canvasRef.current.dispatchEvent(mouseEvent);
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    setIsDrawing(true);
+    setHasDrawn(true);
+    const ctx = canvas.getContext('2d');
+    
+    // Account for canvas scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    ctx.beginPath();
+    ctx.moveTo((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
   };
 
   const handleTouchMove = (e) => {
     e.preventDefault();
+    if (!isDrawing) return;
+    
     const touch = e.touches[0];
-    const mouseEvent = new MouseEvent('mousemove', {
-      clientX: touch.clientX,
-      clientY: touch.clientY
-    });
-    canvasRef.current.dispatchEvent(mouseEvent);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    // Account for canvas scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#9CA3AF'; // Light gray for dark mode
+    
+    ctx.lineTo((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
+    ctx.stroke();
   };
 
   const handleTouchEnd = (e) => {
     e.preventDefault();
-    const mouseEvent = new MouseEvent('mouseup', {});
-    canvasRef.current.dispatchEvent(mouseEvent);
+    setIsDrawing(false);
   };
 
   const clearCanvas = () => {
@@ -201,7 +219,7 @@ function RandomLocationGenerator() {
                   ref={canvasRef}
                   width={280}
                   height={200}
-                  className="border-2 border-gray-600 rounded-lg cursor-crosshair bg-gray-900 w-full"
+                  className="border-2 border-gray-600 rounded-lg cursor-crosshair bg-gray-900 w-full touch-none"
                   style={{ width: '100%', height: '200px' }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
