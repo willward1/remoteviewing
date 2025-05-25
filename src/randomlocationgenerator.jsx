@@ -398,21 +398,12 @@ function RandomLocationGenerator() {
             <h2 className="text-lg font-semibold mb-3 text-gray-800">Session Complete</h2>
             <div className="mt-4 flex gap-3 flex-wrap">
               {finalImage && (
-                <>
-                  <button
-                    onClick={downloadImage}
-                    className="inline-block bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm font-medium"
-                  >
-                    Download Session Image
-                  </button>
-                  <button
-                    onClick={shareOnX}
-                    className="inline-block bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium flex items-center"
-                  >
-                    <span className="mr-2">𝕏</span>
-                    Share on X
-                  </button>
-                </>
+                <button
+                  onClick={downloadImage}
+                  className="inline-block bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm font-medium"
+                >
+                  Download Session Image
+                </button>
               )}
             </div>
           </div>
