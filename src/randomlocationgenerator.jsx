@@ -8,8 +8,11 @@ function RandomLocationGenerator() {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [finalImage, setFinalImage] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [timerActive, setTimerActive] = useState(false);
   const canvasRef = useRef(null);
   const finalCanvasRef = useRef(null);
+  const timerRef = useRef(null);
 
   // Generate a random code in format [XXXX-XXXX]
   const generateRandomCode = () => {
@@ -64,6 +67,25 @@ function RandomLocationGenerator() {
     setTitle('');
     setNotes('');
     setFinalImage(null);
+    setTimeLeft(300); // Reset to 5 minutes
+    setTimerActive(true);
+    
+    // Start the countdown timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          setTimerActive(false);
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+    
     // Clear the canvas
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -74,6 +96,12 @@ function RandomLocationGenerator() {
 
   const takeMeThere = () => {
     if (!code) return;
+    
+    // Stop the timer
+    setTimerActive(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
     
     const newCoordinates = codeToCoordinates(code);
     const timestamp = new Date().toLocaleTimeString();
@@ -266,6 +294,22 @@ function RandomLocationGenerator() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
+  // Format time display
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Cleanup timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
 
 
   return (
@@ -283,12 +327,22 @@ function RandomLocationGenerator() {
             onClick={generateNewCode}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 mb-4 font-medium"
           >
-            Generate Random Code
+            Start Remote Viewing Session
           </button>
           
           {code && (
             <div className="text-center mb-4">
               <div className="text-sm text-gray-500 mt-1">Session ready - enter your details below</div>
+              {timerActive && (
+                <div className={`text-2xl font-bold mt-2 ${timeLeft <= 60 ? 'text-red-500' : 'text-blue-600'}`}>
+                  Time Remaining: {formatTime(timeLeft)}
+                </div>
+              )}
+              {timeLeft === 0 && (
+                <div className="text-xl font-bold text-red-500 mt-2">
+                  Time's Up! Complete your session.
+                </div>
+              )}
             </div>
           )}
           
