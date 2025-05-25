@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
 function RandomLocationGenerator() {
   const [coordinates, setCoordinates] = useState(null);
   const [code, setCode] = useState(null);
   const [history, setHistory] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [hasDrawn, setHasDrawn] = useState(false);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [finalImage, setFinalImage] = useState(null);
@@ -62,7 +61,6 @@ function RandomLocationGenerator() {
     const newCode = generateRandomCode();
     setCode(newCode);
     setCoordinates(null);
-    setHasDrawn(false);
     setTitle('');
     setNotes('');
     setFinalImage(null);
@@ -194,7 +192,6 @@ function RandomLocationGenerator() {
   // Drawing functions
   const startDrawing = (e) => {
     setIsDrawing(true);
-    setHasDrawn(true);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
@@ -253,7 +250,15 @@ function RandomLocationGenerator() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasDrawn(false);
+  };
+
+  // Check if canvas has any drawing
+  const hasDrawing = () => {
+    if (!canvasRef.current) return false;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    return imageData.data.some((channel, index) => index % 4 !== 3 && channel !== 0);
   };
 
   return (
