@@ -181,13 +181,6 @@ function RandomLocationGenerator() {
     link.click();
   };
 
-  const shareOnX = () => {
-    const text = `Just completed a remote viewing session! ${title ? `"${title}"` : ''} Check out my results:`;
-    const url = window.location.href;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(twitterUrl, '_blank');
-  };
-
   // Drawing functions
   const startDrawing = (e) => {
     setIsDrawing(true);
