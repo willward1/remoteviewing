@@ -1,6 +1,6 @@
 const getGoogleMapsUrl = (lat, lon) => {
     return `https://www.google.com/maps?q=${lat},${lon}&t=k`;
-  };import React, { useState, useRef } from 'react';
+  };import React, { useState, useRef, useEffect } from 'react';
 
 function RandomLocationGenerator() {
   const [coordinates, setCoordinates] = useState(null);
@@ -279,7 +279,7 @@ function RandomLocationGenerator() {
   };
 
   // Cleanup timer on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
