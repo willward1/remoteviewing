@@ -1,59 +1,444 @@
+import React, { useState, useRef } from 'react';
 
-9:52:01 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
-9:51:56 PM: Netlify Build                                                 
-9:51:56 PM: ────────────────────────────────────────────────────────────────
-9:51:56 PM: ​
-9:51:56 PM: ❯ Version
-9:51:56 PM:   @netlify/build 33.2.0
-9:51:56 PM: ​
-9:51:56 PM: ❯ Flags
-9:51:56 PM:   accountId: 682f98f5558bea860fc6eb3c
-9:51:56 PM:   baseRelDir: true
-9:51:56 PM:   buildId: 683277ae88eea10008d742fb
-9:51:56 PM:   deployId: 683277ae88eea10008d742fd
-9:51:57 PM: ​
-9:51:57 PM: ❯ Current directory
-9:51:57 PM:   /opt/build/repo
-9:51:57 PM: ​
-9:51:57 PM: ❯ Config file
-9:51:57 PM:   No config file was defined: using default values.
-9:51:57 PM: ​
-9:51:57 PM: ❯ Context
-9:51:57 PM:   production
-9:51:57 PM: ​
-9:51:57 PM: Build command from Netlify app                                
-9:51:57 PM: ────────────────────────────────────────────────────────────────
-9:51:57 PM: ​
-9:51:57 PM: $ npm run build
-9:51:57 PM: > random-location-generator@1.0.0 build
-9:51:57 PM: > react-scripts build
-9:51:57 PM: Creating an optimized production build...
-9:52:00 PM: 
-9:52:00 PM: Treating warnings as errors because process.env.CI = true.
-9:52:00 PM: Most CI servers set it automatically.
-9:52:00 PM: 
-9:52:00 PM: Failed to compile.
-9:52:00 PM: 
-9:52:00 PM: [eslint]
-9:52:00 PM: src/randomlocationgenerator.jsx
-9:52:00 PM:   Line 256:9:  'hasDrawing' is assigned a value but never used  no-unused-vars
-9:52:00 PM: ​
-9:52:00 PM: "build.command" failed                                        
-9:52:00 PM: ────────────────────────────────────────────────────────────────
-9:52:00 PM: ​
-9:52:00 PM:   Error message
-9:52:00 PM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
-9:52:00 PM: ​
-9:52:00 PM:   Error location
-9:52:00 PM:   In Build command from Netlify app:
-9:52:00 PM:   npm run build
-9:52:00 PM: ​
-9:52:00 PM:   Resolved config
-9:52:00 PM:   build:
-9:52:00 PM:     command: npm run build
-9:52:00 PM:     commandOrigin: ui
-9:52:00 PM:     publish: /opt/build/repo/build
-9:52:00 PM:     publishOrigin: ui
-9:52:01 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
-9:52:01 PM: Failing build: Failed to build site
-9:52:01 PM: Finished processing build request in 17.426s
+function RandomLocationGenerator() {
+  const [coordinates, setCoordinates] = useState(null);
+  const [code, setCode] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [title, setTitle] = useState('');
+  const [notes, setNotes] = useState('');
+  const [finalImage, setFinalImage] = useState(null);
+  const canvasRef = useRef(null);
+  const finalCanvasRef = useRef(null);
+
+  // Generate a random code in format [XXXX-XXXX]
+  const generateRandomCode = () => {
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    
+    // Generate first 4 characters
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    result += '-';
+    
+    // Generate last 4 characters
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    return result;
+  };
+
+  // Function to convert code to coordinates
+  const codeToCoordinates = (code) => {
+    if (!code) return null;
+    
+    // Use the code as a seed for a pseudo-random number generator
+    const codeSeed = code.replace('-', '').split('').reduce((acc, char) => {
+      return acc + char.charCodeAt(0);
+    }, 0);
+    
+    // Use a simple deterministic algorithm based on the seed
+    const seedRandom = (seed, min, max) => {
+      const x = Math.sin(seed) * 10000;
+      const result = x - Math.floor(x);
+      return min + result * (max - min);
+    };
+    
+    // Generate latitude (-90 to 90) and longitude (-180 to 180)
+    const lat = seedRandom(codeSeed, -90, 90);
+    const lon = seedRandom(codeSeed + 1, -180, 180);
+    
+    return {
+      lat: lat.toFixed(6),
+      lon: lon.toFixed(6)
+    };
+  };
+
+  const generateNewCode = () => {
+    const newCode = generateRandomCode();
+    setCode(newCode);
+    setCoordinates(null);
+    setTitle('');
+    setNotes('');
+    setFinalImage(null);
+    // Clear the canvas
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const takeMeThere = () => {
+    if (!code) return;
+    
+    const newCoordinates = codeToCoordinates(code);
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const locationData = {
+      code: code,
+      lat: newCoordinates.lat,
+      lon: newCoordinates.lon,
+      timestamp: timestamp,
+      title: title,
+      notes: notes
+    };
+    
+    setCoordinates(newCoordinates);
+    setHistory(prevHistory => [locationData, ...prevHistory].slice(0, 10));
+    
+    // Generate the final sharable image
+    generateFinalImage();
+  };
+
+  const generateFinalImage = () => {
+    const finalCanvas = finalCanvasRef.current;
+    const ctx = finalCanvas.getContext('2d');
+    
+    // Set canvas size to 1200x675
+    finalCanvas.width = 1200;
+    finalCanvas.height = 675;
+    
+    // Fill white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 1200, 675);
+    
+    // Add border
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, 1200, 675);
+    
+    // Add title
+    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(title || 'Remote Viewing Session', 600, 50);
+    
+    // Add code
+    ctx.font = 'bold 28px monospace';
+    ctx.fillText(`[${code}]`, 600, 90);
+    
+    // Add coordinates
+    if (coordinates) {
+      ctx.font = '20px Arial';
+      ctx.fillText(`${coordinates.lat}°, ${coordinates.lon}°`, 600, 120);
+    }
+    
+    // Draw the ideogram (scaled to fit left side)
+    if (canvasRef.current) {
+      const sourceCanvas = canvasRef.current;
+      // Scale and position the drawing on the left side
+      ctx.drawImage(sourceCanvas, 50, 150, 500, 350);
+    }
+    
+    // Add notes section on the right side
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#374151';
+    ctx.fillText('Notes and Impressions:', 600, 180);
+    
+    // Split notes into lines and draw
+    if (notes) {
+      const words = notes.split(' ');
+      let line = '';
+      let y = 210;
+      const maxWidth = 540;
+      
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        if (testWidth > maxWidth && n > 0) {
+          ctx.fillText(line, 600, y);
+          line = words[n] + ' ';
+          y += 25;
+        } else {
+          line = testLine;
+        }
+        
+        if (y > 480) break; // Don't go beyond the canvas
+      }
+      ctx.fillText(line, 600, y);
+    }
+    
+    // Add timestamp at bottom
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(`Generated: ${new Date().toLocaleString()}`, 600, 640);
+    
+    // Convert to data URL for display
+    const dataURL = finalCanvas.toDataURL('image/png');
+    setFinalImage(dataURL);
+  };
+
+  const downloadImage = () => {
+    if (!finalImage) return;
+    
+    const link = document.createElement('a');
+    link.download = `remote-viewing-${code}.png`;
+    link.href = finalImage;
+    link.click();
+  };
+
+  const getGoogleMapsUrl = (lat, lon) => {
+    return `https://www.google.com/maps?q=${lat},${lon}&t=k`;
+  };
+
+  // Drawing functions
+  const startDrawing = (e) => {
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#374151';
+    
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  // Touch events for mobile
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousedown', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvasRef.current.dispatchEvent(mouseEvent);
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousemove', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvasRef.current.dispatchEvent(mouseEvent);
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    const mouseEvent = new MouseEvent('mouseup', {});
+    canvasRef.current.dispatchEvent(mouseEvent);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+
+
+  return (
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-center mb-6">
+          <div className="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+            <span className="text-white text-xl">🌍</span>
+          </div>
+          <h1 className="text-xl font-bold text-gray-800">Random Location Generator</h1>
+        </div>
+        
+        <div className="flex flex-col items-center mb-6">
+          <button 
+            onClick={generateNewCode}
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 mb-4 font-medium"
+          >
+            Generate Random Code
+          </button>
+          
+          {code && (
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold tracking-wider text-gray-800">[{code}]</div>
+              <div className="text-sm text-gray-500 mt-1">Your destination code</div>
+            </div>
+          )}
+          
+          {/* Title Input */}
+          {code && !coordinates && (
+            <div className="w-full max-w-md mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Session Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter a title for this session..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+          
+          {/* Drawing Canvas - only show when code exists but coordinates don't */}
+          {code && !coordinates && (
+            <div className="w-full mb-4">
+              <h3 className="text-lg font-semibold text-center mb-3 text-gray-800">Draw your ideogram</h3>
+              <div className="border-2 border-gray-300 rounded-lg p-2 bg-white overflow-x-auto">
+                <canvas
+                  ref={canvasRef}
+                  width={1200}
+                  height={675}
+                  className="border border-gray-200 rounded cursor-crosshair bg-white max-w-full"
+                  style={{ maxWidth: '100%', height: 'auto' }}
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                />
+                <div className="flex justify-between mt-2">
+                  <button
+                    onClick={clearCanvas}
+                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                  >
+                    Clear
+                  </button>
+                  <div className="text-xs text-gray-500 flex items-center">
+                    🖌️ Draw your impressions
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Notes Input */}
+          {code && !coordinates && (
+            <div className="w-full max-w-2xl mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes and Impressions
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Write your notes and impressions here..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+          
+          {/* Take Me There button - only show when title is entered */}
+          {code && title && !coordinates && (
+            <button 
+              onClick={takeMeThere}
+              className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
+            >
+              <span className="mr-2">📍</span>
+              Take Me There
+            </button>
+          )}
+        </div>
+        
+        {coordinates && (
+          <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">Session Complete</h2>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Code:</span>
+                <span className="text-gray-800">[{code}]</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Latitude:</span>
+                <span className="text-gray-800">{coordinates.lat}°</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Longitude:</span>
+                <span className="text-gray-800">{coordinates.lon}°</span>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <a 
+                href={getGoogleMapsUrl(coordinates.lat, coordinates.lon)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-medium"
+              >
+                View on Google Maps (Satellite)
+              </a>
+              {finalImage && (
+                <button
+                  onClick={downloadImage}
+                  className="inline-block bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm font-medium"
+                >
+                  Download Session Image
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Final Image Preview */}
+        {finalImage && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">Session Summary</h2>
+            <div className="border border-gray-200 rounded-lg p-4 bg-white">
+              <img 
+                src={finalImage} 
+                alt="Session Summary" 
+                className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+                style={{ maxHeight: '500px', objectFit: 'contain' }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Hidden canvas for generating final image */}
+        <canvas
+          ref={finalCanvasRef}
+          style={{ display: 'none' }}
+        />
+        
+        {history.length > 0 && (
+          <div>
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">History (Last 10)</h2>
+            <div className="max-h-64 overflow-y-auto">
+              <div className="space-y-2">
+                {history.map((item, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-gray-800">[{item.code}] {item.title}</div>
+                        <div className="text-sm text-gray-600">{item.lat}°, {item.lon}°</div>
+                      </div>
+                      <div className="text-xs text-gray-500">{item.timestamp}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default RandomLocationGenerator;
