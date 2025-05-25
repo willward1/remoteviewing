@@ -195,9 +195,11 @@ function RandomLocationGenerator() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
   };
 
   const draw = (e) => {
@@ -206,12 +208,14 @@ function RandomLocationGenerator() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#374151';
     
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
     ctx.stroke();
   };
 
@@ -223,21 +227,31 @@ function RandomLocationGenerator() {
   const handleTouchStart = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     const mouseEvent = new MouseEvent('mousedown', {
-      clientX: touch.clientX,
-      clientY: touch.clientY
+      clientX: rect.left + (touch.clientX - rect.left) / scaleX,
+      clientY: rect.top + (touch.clientY - rect.top) / scaleY
     });
-    canvasRef.current.dispatchEvent(mouseEvent);
+    canvas.dispatchEvent(mouseEvent);
   };
 
   const handleTouchMove = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     const mouseEvent = new MouseEvent('mousemove', {
-      clientX: touch.clientX,
-      clientY: touch.clientY
+      clientX: rect.left + (touch.clientX - rect.left) / scaleX,
+      clientY: rect.top + (touch.clientY - rect.top) / scaleY
     });
-    canvasRef.current.dispatchEvent(mouseEvent);
+    canvas.dispatchEvent(mouseEvent);
   };
 
   const handleTouchEnd = (e) => {
@@ -261,7 +275,7 @@ function RandomLocationGenerator() {
           <div className="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
             <span className="text-white text-xl">🌍</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-800">Random Location Generator</h1>
+          <h1 className="text-xl font-bold text-gray-800">Associative Remote Viewing Experiment</h1>
         </div>
         
         <div className="flex flex-col items-center mb-6">
@@ -274,8 +288,7 @@ function RandomLocationGenerator() {
           
           {code && (
             <div className="text-center mb-4">
-              <div className="text-2xl font-bold tracking-wider text-gray-800">[{code}]</div>
-              <div className="text-sm text-gray-500 mt-1">Your destination code</div>
+              <div className="text-sm text-gray-500 mt-1">Session ready - enter your details below</div>
             </div>
           )}
           
