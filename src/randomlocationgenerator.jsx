@@ -1,45 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
-function RemoteViewingApp() {
+function RandomLocationGenerator() {
   const [coordinates, setCoordinates] = useState(null);
   const [code, setCode] = useState(null);
   const [history, setHistory] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
-  const [gestaltText, setGestaltText] = useState('');
-  
-  // RV Protocol states
-  const [rvPhase, setRvPhase] = useState('waiting'); // waiting, coordinates, access, objectify, qualify, complete
-  const [showCoordinates, setShowCoordinates] = useState(false);
-  const [coordinatesTimer, setCoordinatesTimer] = useState(0);
-  const [breakTimer, setBreakTimer] = useState(0);
-  const [currentBit, setCurrentBit] = useState(1);
-  const [bits, setBits] = useState([]);
-  const [selectedSymbol, setSelectedSymbol] = useState(null);
-  
+  const [title, setTitle] = useState('');
+  const [notes, setNotes] = useState('');
+  const [finalImage, setFinalImage] = useState(null);
   const canvasRef = useRef(null);
-
-  // RV Symbols from the manual
-  const rvSymbols = [
-    { name: 'Angular Lines', symbol: '⩚', meaning: 'Cliffs, structures' },
-    { name: 'Curved Lines', symbol: '⌒', meaning: 'Water, channels' },
-    { name: 'Straight Lines', symbol: '—', meaning: 'Boundaries, interfaces' },
-    { name: 'Wavy Lines', symbol: '～', meaning: 'Rolling terrain, hills' },
-    { name: 'Dots', symbol: '•••', meaning: 'Populated areas' },
-    { name: 'Irregular', symbol: '⩙', meaning: 'Mountains, rough terrain' }
-  ];
+  const finalCanvasRef = useRef(null);
 
   // Generate a random code in format [XXXX-XXXX]
   const generateRandomCode = () => {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';
     
+    // Generate first 4 characters
     for (let i = 0; i < 4; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     
     result += '-';
     
+    // Generate last 4 characters
     for (let i = 0; i < 4; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -51,16 +36,19 @@ function RemoteViewingApp() {
   const codeToCoordinates = (code) => {
     if (!code) return null;
     
+    // Use the code as a seed for a pseudo-random number generator
     const codeSeed = code.replace('-', '').split('').reduce((acc, char) => {
       return acc + char.charCodeAt(0);
     }, 0);
     
+    // Use a simple deterministic algorithm based on the seed
     const seedRandom = (seed, min, max) => {
       const x = Math.sin(seed) * 10000;
       const result = x - Math.floor(x);
       return min + result * (max - min);
     };
     
+    // Generate latitude (-90 to 90) and longitude (-180 to 180)
     const lat = seedRandom(codeSeed, -90, 90);
     const lon = seedRandom(codeSeed + 1, -180, 180);
     
@@ -70,183 +58,20 @@ function RemoteViewingApp() {
     };
   };
 
-  const startRVSession = () => {
+  const generateNewCode = () => {
     const newCode = generateRandomCode();
     setCode(newCode);
     setCoordinates(null);
     setHasDrawn(false);
-    setGestaltText('');
-    setBits([]);
-    setCurrentBit(1);
-    
+    setTitle('');
+    setNotes('');
+    setFinalImage(null);
     // Clear the canvas
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-    
-    // Start coordinate flash sequence
-    setRvPhase('coordinates');
-    setShowCoordinates(true);
-    setCoordinatesTimer(3);
-    
-    // Countdown timer for coordinates display
-    const timer = setInterval(() => {
-      setCoordinatesTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setShowCoordinates(false);
-          startBreakPeriod();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const startBreakPeriod = () => {
-    setRvPhase('break');
-    setBreakTimer(10);
-    
-    const timer = setInterval(() => {
-      setBreakTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setRvPhase('access');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const completeAccessPhase = () => {
-    if (hasDrawn) {
-      setRvPhase('objectify');
-    }
-  };
-
-  const addSymbol = (symbol) => {
-    setSelectedSymbol(symbol);
-    setHasDrawn(true);
-    
-    // Draw the symbol on the canvas
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = '#9CA3AF';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    
-    // Draw different symbols based on type
-    switch (symbol.name) {
-      case 'Angular Lines':
-        // Draw angular/cliff-like lines
-        ctx.beginPath();
-        ctx.moveTo(centerX - 40, centerY + 20);
-        ctx.lineTo(centerX - 10, centerY - 30);
-        ctx.lineTo(centerX + 20, centerY - 25);
-        ctx.lineTo(centerX + 40, centerY + 15);
-        ctx.stroke();
-        break;
-        
-      default:
-        // Default: draw a simple line
-        ctx.beginPath();
-        ctx.moveTo(centerX - 20, centerY);
-        ctx.lineTo(centerX + 20, centerY);
-        ctx.stroke();
-        break;
-        
-      case 'Curved Lines':
-        // Draw curved water-like lines
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, 30, 0, Math.PI, false);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(centerX, centerY + 15, 25, 0, Math.PI, false);
-        ctx.stroke();
-        break;
-        
-      case 'Straight Lines':
-        // Draw boundary/interface lines
-        ctx.beginPath();
-        ctx.moveTo(centerX - 40, centerY);
-        ctx.lineTo(centerX + 40, centerY);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(centerX - 30, centerY + 15);
-        ctx.lineTo(centerX + 30, centerY + 15);
-        ctx.stroke();
-        break;
-        
-      case 'Wavy Lines':
-        // Draw rolling terrain
-        ctx.beginPath();
-        ctx.moveTo(centerX - 40, centerY);
-        ctx.quadraticCurveTo(centerX - 20, centerY - 15, centerX, centerY);
-        ctx.quadraticCurveTo(centerX + 20, centerY + 15, centerX + 40, centerY);
-        ctx.stroke();
-        break;
-        
-      case 'Dots':
-        // Draw populated area dots
-        for (let i = 0; i < 8; i++) {
-          const x = centerX - 30 + (i % 4) * 20;
-          const y = centerY - 10 + Math.floor(i / 4) * 20;
-          ctx.beginPath();
-          ctx.arc(x, y, 3, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-        break;
-        
-      case 'Irregular':
-        // Draw mountains/rough terrain
-        ctx.beginPath();
-        ctx.moveTo(centerX - 40, centerY + 20);
-        ctx.lineTo(centerX - 25, centerY - 25);
-        ctx.lineTo(centerX - 10, centerY - 5);
-        ctx.lineTo(centerX + 5, centerY - 30);
-        ctx.lineTo(centerX + 20, centerY - 10);
-        ctx.lineTo(centerX + 40, centerY + 20);
-        ctx.stroke();
-        break;
-    }
-    
-    // Add symbol to current bit
-    const newBit = {
-      id: currentBit,
-      phase: 'access',
-      symbol: symbol,
-      drawing: symbol.name,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setBits(prev => [...prev, newBit]);
-  };
-
-  const nextBit = () => {
-    if (rvPhase === 'access') {
-      setRvPhase('objectify');
-    } else if (rvPhase === 'objectify') {
-      setCurrentBit(prev => prev + 1);
-      setHasDrawn(false);
-      setSelectedSymbol(null);
-      if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      setRvPhase('access');
-    }
-  };
-
-  const proceedToQualify = () => {
-    setRvPhase('qualify');
   };
 
   const takeMeThere = () => {
@@ -260,12 +85,106 @@ function RemoteViewingApp() {
       lat: newCoordinates.lat,
       lon: newCoordinates.lon,
       timestamp: timestamp,
-      bits: bits
+      title: title,
+      notes: notes
     };
     
     setCoordinates(newCoordinates);
     setHistory(prevHistory => [locationData, ...prevHistory].slice(0, 10));
-    setRvPhase('complete');
+    
+    // Generate the final sharable image
+    generateFinalImage();
+  };
+
+  const generateFinalImage = () => {
+    const finalCanvas = finalCanvasRef.current;
+    const ctx = finalCanvas.getContext('2d');
+    
+    // Set canvas size to 1200x675
+    finalCanvas.width = 1200;
+    finalCanvas.height = 675;
+    
+    // Fill white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 1200, 675);
+    
+    // Add border
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, 1200, 675);
+    
+    // Add title
+    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(title || 'Remote Viewing Session', 600, 50);
+    
+    // Add code
+    ctx.font = 'bold 28px monospace';
+    ctx.fillText(`[${code}]`, 600, 90);
+    
+    // Add coordinates
+    if (coordinates) {
+      ctx.font = '20px Arial';
+      ctx.fillText(`${coordinates.lat}°, ${coordinates.lon}°`, 600, 120);
+    }
+    
+    // Draw the ideogram (scaled to fit left side)
+    if (canvasRef.current) {
+      const sourceCanvas = canvasRef.current;
+      // Scale and position the drawing on the left side
+      ctx.drawImage(sourceCanvas, 50, 150, 500, 350);
+    }
+    
+    // Add notes section on the right side
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#374151';
+    ctx.fillText('Notes and Impressions:', 600, 180);
+    
+    // Split notes into lines and draw
+    if (notes) {
+      const words = notes.split(' ');
+      let line = '';
+      let y = 210;
+      const maxWidth = 540;
+      
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        if (testWidth > maxWidth && n > 0) {
+          ctx.fillText(line, 600, y);
+          line = words[n] + ' ';
+          y += 25;
+        } else {
+          line = testLine;
+        }
+        
+        if (y > 480) break; // Don't go beyond the canvas
+      }
+      ctx.fillText(line, 600, y);
+    }
+    
+    // Add timestamp at bottom
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(`Generated: ${new Date().toLocaleString()}`, 600, 640);
+    
+    // Convert to data URL for display
+    const dataURL = finalCanvas.toDataURL('image/png');
+    setFinalImage(dataURL);
+  };
+
+  const downloadImage = () => {
+    if (!finalImage) return;
+    
+    const link = document.createElement('a');
+    link.download = `remote-viewing-${code}.png`;
+    link.href = finalImage;
+    link.click();
   };
 
   const getGoogleMapsUrl = (lat, lon) => {
@@ -280,11 +199,8 @@ function RemoteViewingApp() {
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
     ctx.beginPath();
-    ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
   };
 
   const draw = (e) => {
@@ -294,14 +210,11 @@ function RemoteViewingApp() {
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#9CA3AF';
+    ctx.strokeStyle = '#374151';
     
-    ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.stroke();
   };
 
@@ -309,47 +222,31 @@ function RemoteViewingApp() {
     setIsDrawing(false);
   };
 
-  // Touch events
+  // Touch events for mobile
   const handleTouchStart = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    
-    setIsDrawing(true);
-    setHasDrawn(true);
-    const ctx = canvas.getContext('2d');
-    
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    ctx.beginPath();
-    ctx.moveTo((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
+    const mouseEvent = new MouseEvent('mousedown', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvasRef.current.dispatchEvent(mouseEvent);
   };
 
   const handleTouchMove = (e) => {
     e.preventDefault();
-    if (!isDrawing) return;
-    
     const touch = e.touches[0];
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#9CA3AF';
-    
-    ctx.lineTo((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
-    ctx.stroke();
+    const mouseEvent = new MouseEvent('mousemove', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvasRef.current.dispatchEvent(mouseEvent);
   };
 
   const handleTouchEnd = (e) => {
     e.preventDefault();
-    setIsDrawing(false);
+    const mouseEvent = new MouseEvent('mouseup', {});
+    canvasRef.current.dispatchEvent(mouseEvent);
   };
 
   const clearCanvas = () => {
@@ -360,98 +257,57 @@ function RemoteViewingApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-md mx-auto bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-center mb-6">
-          <div className="w-12 h-12 mr-3 relative">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center relative">
-              {/* AOL logo */}
-              <div className="text-blue-600 font-bold text-lg">
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center">
-                    <div className="w-0 h-0 border-l-2 border-r-2 border-b-3 border-transparent border-b-blue-600 mr-1"></div>
-                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                  </div>
-                  <div className="text-xs font-bold mt-0.5">AOL</div>
-                </div>
-              </div>
-              {/* Red prohibition sign */}
-              <div className="absolute inset-0 border-4 border-red-600 rounded-full"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-1 bg-red-600 transform rotate-45"></div>
-              </div>
-            </div>
+          <div className="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+            <span className="text-white text-xl">🌍</span>
           </div>
-          <h1 className="text-xl font-bold text-white">Remote Viewing Training</h1>
+          <h1 className="text-xl font-bold text-gray-800">Random Location Generator</h1>
         </div>
         
         <div className="flex flex-col items-center mb-6">
-          {rvPhase === 'waiting' && (
-            <button 
-              onClick={startRVSession}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
-            >
-              Begin RV Session
-            </button>
-          )}
-
-          {rvPhase === 'coordinates' && (
-            <div className="text-center">
-              <div className="text-lg text-gray-300 mb-2">Focus on coordinates in: {coordinatesTimer}s</div>
-              {showCoordinates && code && (
-                <div className="text-3xl font-bold tracking-wider text-green-400 animate-pulse">
-                  [{code}]
-                </div>
-              )}
+          <button 
+            onClick={generateNewCode}
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 mb-4 font-medium"
+          >
+            Generate Random Code
+          </button>
+          
+          {code && (
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold tracking-wider text-gray-800">[{code}]</div>
+              <div className="text-sm text-gray-500 mt-1">Your destination code</div>
             </div>
           )}
-
-          {rvPhase === 'break' && (
-            <div className="text-center">
-              <div className="text-lg text-gray-300 mb-2">Mental break period</div>
-              <div className="text-2xl font-bold text-yellow-400">{breakTimer}s</div>
-              <div className="text-sm text-gray-400 mt-2">Clear your mind</div>
+          
+          {/* Title Input */}
+          {code && !coordinates && (
+            <div className="w-full max-w-md mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Session Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter a title for this session..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
           )}
-
-          {rvPhase === 'access' && (
-            <div className="w-full">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Access Phase - Bit #{currentBit}
-                </h3>
-                <p className="text-sm text-gray-400">Capture your first impression quickly</p>
-              </div>
-              
-              {/* RV Symbols */}
-              <div className="mb-4">
-                <div className="text-sm text-gray-300 mb-2">Quick Symbol Selection:</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {rvSymbols.map((sym, index) => (
-                    <button
-                      key={index}
-                      onClick={() => addSymbol(sym)}
-                      className={`p-2 text-sm rounded border transition-colors ${
-                        selectedSymbol?.name === sym.name 
-                          ? 'bg-blue-600 border-blue-500 text-white' 
-                          : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      <div className="font-bold">{sym.symbol}</div>
-                      <div className="text-xs">{sym.name}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Drawing Canvas */}
-              <div className="w-full mb-4">
+          
+          {/* Drawing Canvas - only show when code exists but coordinates don't */}
+          {code && !coordinates && (
+            <div className="w-full mb-4">
+              <h3 className="text-lg font-semibold text-center mb-3 text-gray-800">Draw your ideogram</h3>
+              <div className="border-2 border-gray-300 rounded-lg p-2 bg-white overflow-x-auto">
                 <canvas
                   ref={canvasRef}
-                  width={280}
-                  height={150}
-                  className="border-2 border-gray-600 rounded-lg cursor-crosshair bg-gray-900 w-full touch-none"
-                  style={{ width: '100%', height: '150px' }}
+                  width={1200}
+                  height={675}
+                  className="border border-gray-200 rounded cursor-crosshair bg-white max-w-full"
+                  style={{ maxWidth: '100%', height: 'auto' }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
@@ -460,152 +316,121 @@ function RemoteViewingApp() {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 />
-                <div className="flex justify-center mt-2">
+                <div className="flex justify-between mt-2">
                   <button
                     onClick={clearCanvas}
-                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-500 transition-colors"
+                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
                   >
                     Clear
                   </button>
+                  <div className="text-xs text-gray-500 flex items-center">
+                    🖌️ Draw your impressions
+                  </div>
                 </div>
-              </div>
-
-              {(hasDrawn || selectedSymbol) && (
-                <div className="flex justify-center">
-                  <button 
-                    onClick={completeAccessPhase}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium transition-colors"
-                  >
-                    Complete Access Phase
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {rvPhase === 'objectify' && (
-            <div className="w-full text-center">
-              <h3 className="text-lg font-semibold text-white mb-4">Objectify Phase</h3>
-              <p className="text-sm text-gray-400 mb-4">
-                Write down your first impression using simple words
-              </p>
-              
-              <textarea
-                className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-400 mb-4"
-                rows="3"
-                placeholder="Quick description (water, structure, terrain, etc.)"
-              />
-              
-              <div className="flex justify-center space-x-3">
-                <button 
-                  onClick={nextBit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
-                >
-                  Next Bit
-                </button>
-                <button 
-                  onClick={proceedToQualify}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium transition-colors"
-                >
-                  Proceed to Qualify
-                </button>
               </div>
             </div>
           )}
-
-          {rvPhase === 'qualify' && (
-            <div className="w-full">
-              <h3 className="text-lg font-semibold text-white mb-4 text-center">Qualify Phase</h3>
-              <p className="text-sm text-gray-400 mb-4 text-center">
-                Describe the target in detail: texture, color, function, etc.
-              </p>
-              
+          
+          {/* Notes Input */}
+          {code && !coordinates && (
+            <div className="w-full max-w-2xl mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes and Impressions
+              </label>
               <textarea
-                value={gestaltText}
-                onChange={(e) => setGestaltText(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-400 mb-4"
-                rows="6"
-                placeholder="Detailed description of impressions, feelings, textures, functions, etc."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Write your notes and impressions here..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              
-              {gestaltText.trim() && (
-                <div className="flex justify-center">
-                  <button 
-                    onClick={takeMeThere}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium flex items-center transition-colors"
-                  >
-                    <span className="mr-2">📍</span>
-                    Reveal Target Location
-                  </button>
-                </div>
-              )}
             </div>
+          )}
+          
+          {/* Take Me There button - only show when title is entered */}
+          {code && title && !coordinates && (
+            <button 
+              onClick={takeMeThere}
+              className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium flex items-center"
+            >
+              <span className="mr-2">📍</span>
+              Take Me There
+            </button>
           )}
         </div>
         
         {coordinates && (
-          <div className="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-750">
-            <h2 className="text-lg font-semibold mb-3 text-white">Target Revealed</h2>
+          <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">Session Complete</h2>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="font-medium text-gray-300">Code:</span>
-                <span className="text-white">[{code}]</span>
+                <span className="font-medium text-gray-600">Code:</span>
+                <span className="text-gray-800">[{code}]</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium text-gray-300">Latitude:</span>
-                <span className="text-white">{coordinates.lat}°</span>
+                <span className="font-medium text-gray-600">Latitude:</span>
+                <span className="text-gray-800">{coordinates.lat}°</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium text-gray-300">Longitude:</span>
-                <span className="text-white">{coordinates.lon}°</span>
+                <span className="font-medium text-gray-600">Longitude:</span>
+                <span className="text-gray-800">{coordinates.lon}°</span>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex gap-3">
               <a 
                 href={getGoogleMapsUrl(coordinates.lat, coordinates.lon)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+                className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-medium"
               >
-                View Satellite Image
+                View on Google Maps (Satellite)
               </a>
-            </div>
-            
-            {rvPhase === 'complete' && (
-              <div className="mt-4">
-                <button 
-                  onClick={() => {
-                    setRvPhase('waiting');
-                    setCode(null);
-                    setCoordinates(null);
-                  }}
-                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm font-medium transition-colors"
+              {finalImage && (
+                <button
+                  onClick={downloadImage}
+                  className="inline-block bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm font-medium"
                 >
-                  Start New Session
+                  Download Session Image
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
         
+        {/* Final Image Preview */}
+        {finalImage && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">Session Summary</h2>
+            <div className="border border-gray-200 rounded-lg p-4 bg-white">
+              <img 
+                src={finalImage} 
+                alt="Session Summary" 
+                className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+                style={{ maxHeight: '500px', objectFit: 'contain' }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Hidden canvas for generating final image */}
+        <canvas
+          ref={finalCanvasRef}
+          style={{ display: 'none' }}
+        />
+        
         {history.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold mb-3 text-white">Session History</h2>
+            <h2 className="text-lg font-semibold mb-3 text-gray-800">History (Last 10)</h2>
             <div className="max-h-64 overflow-y-auto">
               <div className="space-y-2">
                 {history.map((item, index) => (
-                  <div key={index} className="p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg border">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-medium text-white">[{item.code}]</div>
-                        <div className="text-sm text-gray-300">{item.lat}°, {item.lon}°</div>
-                        {item.bits && item.bits.length > 0 && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            {item.bits.length} bits recorded
-                          </div>
-                        )}
+                        <div className="font-medium text-gray-800">[{item.code}] {item.title}</div>
+                        <div className="text-sm text-gray-600">{item.lat}°, {item.lon}°</div>
                       </div>
-                      <div className="text-xs text-gray-400">{item.timestamp}</div>
+                      <div className="text-xs text-gray-500">{item.timestamp}</div>
                     </div>
                   </div>
                 ))}
@@ -618,4 +443,4 @@ function RemoteViewingApp() {
   );
 }
 
-export default RemoteViewingApp;
+export default RandomLocationGenerator;
